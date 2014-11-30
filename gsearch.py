@@ -15,7 +15,7 @@ import urllib2, socket, time
 import gzip, StringIO
 import re, random, types
 
-from bs4 import BeautifulSoup 
+from BeautifulSoup import BeautifulSoup 
 
 base_url = 'https://www.google.com.hk/'
 results_per_page = 10
@@ -194,7 +194,7 @@ def crawler():
     api = GoogleAPI()
 
     # set expect search results to be crawled
-    expect_num = 10
+    expect_num = 1000
     # if no parameters, read query keywords from file
     if(len(sys.argv) < 2):
         keywords = open('./keywords', 'r')
@@ -208,8 +208,15 @@ def crawler():
     else:
         keyword = sys.argv[1]
         results = api.search(keyword, num = expect_num)
+        cur=1
+        URLs=[]
         for r in results:
-            r.printIt()
+            if r.getURL() not in URLs:
+                print str(cur)+'.',
+                cur+=1
+                r.printIt()
+                URLs+=[r.getURL()]
 
 if __name__ == '__main__':
     crawler()
+# \"BS\"OR\"B.S\"AND\"shanghai jiao\" site:utexas.edu
