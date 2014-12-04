@@ -130,6 +130,7 @@ class GoogleAPI:
                         content = span.renderContents()
                         result.setContent(content)
                     results.append(result)
+        print "finish extraction!"
         return results
 
     # search web
@@ -160,7 +161,8 @@ class GoogleAPI:
                 request.add_header('Accept-Encoding', 'gzip')
                 request.add_header('referer', base_url)
                 response = urllib2.urlopen(request)
-                html = response.read() 
+                html = response.read()
+                print "read!"
                 if(response.headers.get('content-encoding', None) == 'gzip'):
                     html = gzip.GzipFile(fileobj=StringIO.StringIO(html)).read()
 
