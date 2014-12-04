@@ -49,6 +49,8 @@ class SearchResult:
         self.content = content
 
     def printIt(self, prefix = ''):
+        f.write('url->'+self.url+'\n'+'title->'+self.title+'\n'+'content->'+self.content+'\n')
+        print       
         print 'url\t->', self.url
         print 'title\t->', self.title
         print 'content\t->', self.content
@@ -137,44 +139,45 @@ class GoogleAPI:
     def search(self, query, lang='en', num=results_per_page):
         search_results = list()
         query = urllib2.quote(query)
-        if(num % results_per_page == 0):
-            pages = num / results_per_page
-        else:
-            pages = num / results_per_page + 1
+        # if(num % results_per_page == 0):
+        #     pages = num / results_per_page
+        # else:
+        #     pages = num / results_per_page + 1
+        # print num,results_per_page,pages
+        # for p in range(0, pages):
+        #     start = p * results_per_page 
+        
+        url = '%s/search?hl=%s&num=%d&start=%s&q=%s' % (base_url, lang, 1000, 0, query)
+        retry = 3
+        while(retry > 0):
+            try:
+                request = urllib2.Request(url)
+                length = len(user_agents)
+                index = random.randint(0, length-1)
+                user_agent = user_agents[index] 
+                request.add_header('User-agent', user_agent)
+                request.add_header('connection','keep-alive')
+                request.add_header('Accept-Encoding', 'gzip')
+                request.add_header('referer', base_url)
+                response = urllib2.urlopen(request)
+                html = response.read() 
+                if(response.headers.get('content-encoding', None) == 'gzip'):
+                    html = gzip.GzipFile(fileobj=StringIO.StringIO(html)).read()
 
-        for p in range(0, pages):
-            start = p * results_per_page 
-            url = '%s/search?hl=%s&num=%dstart=%s&q=%s' % (base_url, lang, results_per_page, start, query)
-            retry = 3
-            while(retry > 0):
-                try:
-                    request = urllib2.Request(url)
-                    length = len(user_agents)
-                    index = random.randint(0, length-1)
-                    user_agent = user_agents[index] 
-                    request.add_header('User-agent', user_agent)
-                    request.add_header('connection','keep-alive')
-                    request.add_header('Accept-Encoding', 'gzip')
-                    request.add_header('referer', base_url)
-                    response = urllib2.urlopen(request)
-                    html = response.read() 
-                    if(response.headers.get('content-encoding', None) == 'gzip'):
-                        html = gzip.GzipFile(fileobj=StringIO.StringIO(html)).read()
-
-                    results = self.extractSearchResults(html)
-                    search_results.extend(results)
-                    break;
-                except urllib2.URLError,e:
-                    print 'url error:', e
-                    self.randomSleep()
-                    retry = retry - 1
-                    continue
-                
-                except Exception, e:
-                    print 'error:', e
-                    retry = retry - 1
-                    self.randomSleep()
-                    continue
+                results = self.extractSearchResults(html)
+                search_results.extend(results)
+                break;
+            except urllib2.URLError,e:
+                print 'url error:', e
+                self.randomSleep()
+                retry = retry - 1
+                continue
+            
+            except Exception, e:
+                print 'error:', e
+                retry = retry - 1
+                self.randomSleep()
+                continue
         return search_results 
 
 def load_user_agent():
@@ -194,7 +197,8 @@ def crawler():
     api = GoogleAPI()
 
     # set expect search results to be crawled
-    expect_num = 1000
+    expect_num = 10
+    
     # if no parameters, read query keywords from file
     if(len(sys.argv) < 2):
         keywords = open('./keywords', 'r')
@@ -213,10 +217,14 @@ def crawler():
         for r in results:
             if r.getURL() not in URLs:
                 print str(cur)+'.',
+                f.write(str(cur)+'.')
                 cur+=1
                 r.printIt()
                 URLs+=[r.getURL()]
-
+    
 if __name__ == '__main__':
+    f=open('results.txt','w')
     crawler()
+    f.close()
 # \"BS\"OR\"B.S\"AND\"shanghai jiao\" site:utexas.edu
+ # "BS"OR"B.S"AND"shanghai jiao" site:utexas.edu
