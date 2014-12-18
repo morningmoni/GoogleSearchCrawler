@@ -17,7 +17,7 @@ import re, random, types
 
 from BeautifulSoup import BeautifulSoup 
 
-base_url = 'https://www.google.com.hk/'
+base_url = 'https://www.google.com.hk'
 results_per_page = 10
 
 user_agents = list()
@@ -137,7 +137,7 @@ class GoogleAPI:
     # @param query -> query key words 
     # @param lang -> language of search results  
     # @param num -> number of search results to return 
-    def search(self, query, lang='en', num=results_per_page):
+    def search(self, query, lang='en'):
         search_results = list()
         query = urllib2.quote(query)
         # if(num % results_per_page == 0):
@@ -147,39 +147,40 @@ class GoogleAPI:
         # print num,results_per_page,pages
         # for p in range(0, pages):
         #     start = p * results_per_page 
-        
-        url = '%s/search?hl=%s&num=%d&start=%s&q=%s' % (base_url, lang, 1000, 0, query)
-        retry = 3
-        while(retry > 0):
-            try:
-                request = urllib2.Request(url)
-                length = len(user_agents)
-                index = random.randint(0, length-1)
-                user_agent = user_agents[index] 
-                request.add_header('User-agent', user_agent)
-                request.add_header('connection','keep-alive')
-                request.add_header('Accept-Encoding', 'gzip')
-                request.add_header('referer', base_url)
-                response = urllib2.urlopen(request)
-                html = response.read()
-                print "read!"
-                if(response.headers.get('content-encoding', None) == 'gzip'):
-                    html = gzip.GzipFile(fileobj=StringIO.StringIO(html)).read()
+        for s in range(3):
+            url = '%s/search?hl=%s&num=%d&start=%s&q=%s' % (base_url, lang, 100, s*10, query)
+            print url
+            retry = 3
+            while(retry > 0):
+                try:
+                    request = urllib2.Request(url)
+                    length = len(user_agents)
+                    index = random.randint(0, length-1)
+                    user_agent = user_agents[index] 
+                    request.add_header('User-agent', user_agent)
+                    request.add_header('connection','keep-alive')
+                    request.add_header('Accept-Encoding', 'gzip')
+                    request.add_header('referer', base_url)
+                    response = urllib2.urlopen(request)
+                    html = response.read()
+                    print "read!"
+                    if(response.headers.get('content-encoding', None) == 'gzip'):
+                        html = gzip.GzipFile(fileobj=StringIO.StringIO(html)).read()
 
-                results = self.extractSearchResults(html)
-                search_results.extend(results)
-                break;
-            except urllib2.URLError,e:
-                print 'url error:', e
-                self.randomSleep()
-                retry = retry - 1
-                continue
-            
-            except Exception, e:
-                print 'error:', e
-                retry = retry - 1
-                self.randomSleep()
-                continue
+                    results = self.extractSearchResults(html)
+                    search_results.extend(results)
+                    break;
+                except urllib2.URLError,e:
+                    print 'url error:', e
+                    self.randomSleep()
+                    retry = retry - 1
+                    continue
+                            
+                except Exception, e:
+                    print 'error:', e
+                    retry = retry - 1
+                    self.randomSleep()
+                    continue
         return search_results 
 
 def load_user_agent():
@@ -198,22 +199,21 @@ def crawler():
     # Create a GoogleAPI instance
     api = GoogleAPI()
 
-    # set expect search results to be crawled
-    expect_num = 10
+
     
     # if no parameters, read query keywords from file
     if(len(sys.argv) < 2):
         keywords = open('./keywords', 'r')
         keyword = keywords.readline()
         while(keyword):
-            results = api.search(keyword, num = expect_num)
+            results = api.search(keyword)
             for r in results:
                 r.printIt()
             keyword = keywords.readline()
         keywords.close()
     else:
         keyword = sys.argv[1]
-        results = api.search(keyword, num = expect_num)
+        results = api.search(keyword)
         cur=1
         URLs=[]
         for r in results:
@@ -228,5 +228,6 @@ if __name__ == '__main__':
     f=open('results.txt','w')
     crawler()
     f.close()
-# \"BS\"OR\"B.S\"AND\"shanghai jiao\" site:utexas.edu
+# "\"BS\"OR\"B.S\"AND\"shanghai jiao\" site:utexas.edu"
  # "BS"OR"B.S"AND"shanghai jiao" site:utexas.edu
+# '"BS"OR"MS"AND"Shanghai Jiao" site:utexas.edu'
